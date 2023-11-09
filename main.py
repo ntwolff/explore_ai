@@ -6,7 +6,7 @@ app = Flask(__name__)
 # Home page
 @app.route("/")
 def info():
-    return "<p>openai assistant - function calling demo</p>"
+    return "<p>OpenAI Assistant - Function Calling Demo</p>"
 
 # Start the chat
 @app.route("/start")

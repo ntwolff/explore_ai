@@ -1,4 +1,4 @@
-# Skunkworks project exploring AI applications
+# OpenAI Assistant API - Function Calling Demo
 This code is experimental and not intended for production use.
 Use at your own risk.
 
