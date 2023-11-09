@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 import json
 from openai import OpenAI
 from chatgpt import chat_with_gpt
@@ -12,21 +12,27 @@ load_dotenv()  # load environment variables from .env file
 app = Flask(__name__)
 
 # Load OpenAI API key
-api_key = os.getenv("OPENAI_API_KEY")
-model_engine = "text-davinci-002"
+# api_key = os.getenv("OPENAI_API_KEY")
+# model_engine = "text-davinci-002"
 
 # Initialize OpenAI API
-client = OpenAI(api_key)
+client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 
 # Initialize conversation history
 conversation_history = []
 assistant_id = os.getenv('OPENAI_ASSISTANT_ID')
+
+functions = {
+    "get_weather": get_weather,
+    "get_local_weather": get_local_weather
+}
 
 # Load the personality context once from assistant_instructions.txt
 with open('assistant_instructions.txt', 'r') as file:
     instructions = file.read().strip()
 
 # Function to interact with the chatbot
+@app.route("/start")
 def interact_with_bot():
 
     thread = client.beta.threads.create()
@@ -59,7 +65,7 @@ def interact_with_bot():
 
             # Wait until it is not queued
             count = 0
-            while(run.status == "queued" or run.status == "in_progress" and count < 5):
+            while(run.status == "queued" or run.status == "in_progress") and count < 5:
                 time.sleep(2)
                 run = client.beta.threads.runs.retrieve(
                     thread_id=thread.id,
@@ -81,7 +87,7 @@ def interact_with_bot():
 
             # Wait until it is not queued
             count = 0
-            while(run.status == "queued" or run.status == "in_progress" or run.status == "requires_action" and count < 5):
+            while(run.status == "queued" or run.status == "in_progress" or run.status == "requires_action") and count < 5:
                 time.sleep(2)
                 run = client.beta.threads.runs.retrieve(
                     thread_id=thread.id,
@@ -107,7 +113,7 @@ def interact_with_bot():
             answer = chat_with_gpt(question, conversation_history,instructions)
             
             print(f"---------------------------------------------")
-            print(f"JARVIS: {answer}")
+            print(f"ASSISTANT: {answer}")
             
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -136,29 +142,7 @@ def execute_required_functions(required_actions):
 
     return tool_outputs
 
-# Run the interaction
-if __name__ == "__main__":
-    interact_with_bot()
-
-
-# Deprecated
-
-# # Define function to call OpenAI API
-# def ask_openai(question):
-#     response = openai.completions.create(
-#         engine=model_engine,
-#         prompt=question,
-#         max_tokens=1024,
-#         n=1,
-#         stop=None,
-#         temperature=0.5,
-#     )
-#     message = response.choices[0].text.strip()
-#     return message
-
-# # Define Flask route to handle requests
-# @app.route("/", methods=["POST"])
-# def ask_question():
-#     question = request.form["question"]
-#     answer = ask_openai(question)
-#     return jsonify({"answer": answer})
+# home route that returns below text when root url is accessed
+@app.route("/")
+def info():
+    return "<p>GPT Assistant Interactor App.</p>"
