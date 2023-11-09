@@ -2,20 +2,17 @@ from flask import Flask, request
 import json
 from openai import OpenAI
 from chatgpt import chat_with_gpt
-from weather import get_weather, get_local_weather
+from weather import get_weather
 import time
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 
-# Load OpenAI API key
-# api_key = os.getenv("OPENAI_API_KEY")
-# model_engine = "text-davinci-002"
-
 # Initialize OpenAI API
+# TODO: model_engine = "text-davinci-002"
 client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 
 # Initialize conversation history
@@ -23,8 +20,7 @@ conversation_history = []
 assistant_id = os.getenv('OPENAI_ASSISTANT_ID')
 
 functions = {
-    "get_weather": get_weather,
-    "get_local_weather": get_local_weather
+    "get_weather": get_weather
 }
 
 # Load the personality context once from assistant_instructions.txt
@@ -32,13 +28,13 @@ with open('assistant_instructions.txt', 'r') as file:
     instructions = file.read().strip()
 
 # Function to interact with the chatbot
-@app.route("/start")
+@app.route("/")
 def interact_with_bot():
 
     thread = client.beta.threads.create()
 
     while True:
-        question = input("You: ")
+        question = input("User: ")
         if question.lower() == "exit":
             print("Exiting the chat.")
             break
@@ -113,7 +109,7 @@ def interact_with_bot():
             answer = chat_with_gpt(question, conversation_history,instructions)
             
             print(f"---------------------------------------------")
-            print(f"ASSISTANT: {answer}")
+            print(f"Assistant: {answer}")
             
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -124,12 +120,13 @@ def execute_required_functions(required_actions):
     for tool_call in required_actions.submit_tool_outputs.tool_calls:
         func_name = tool_call.function.name
         args = json.loads(tool_call.function.arguments)
+        print(f"Executing function {func_name} with arguments {args}")
         
         # Call the corresponding Python function
         if func_name in functions:
             function = functions[func_name]
             # Assuming all functions take a single dictionary argument
-            result = function(**args)  # Calls your function like get_weather(q="Philadelphia PA")
+            result = function(**args)
 
             # Serialize the function's output to JSON
             result_str = json.dumps(result)
@@ -143,6 +140,6 @@ def execute_required_functions(required_actions):
     return tool_outputs
 
 # home route that returns below text when root url is accessed
-@app.route("/")
-def info():
-    return "<p>GPT Assistant Interactor App.</p>"
+# @app.route("/")
+# def info():
+#     return "<p>GPT Assistant Interactor App.</p>"
