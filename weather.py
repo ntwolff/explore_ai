@@ -1,5 +1,4 @@
 import requests
-from ip import get_public_ip
 import os
 from dotenv import load_dotenv, find_dotenv
 
@@ -13,14 +12,12 @@ API_KEY = os.getenv('WEATHER_API_KEY')
 WEATHER_BASE_URL = "https://api.weather.gov/points/"
 
 headers = {
-    "User-Agent": "wolff.nick@gmail.com",
+    "User-Agent": os.getenv('EMAIL_USER'),
     "Accept": "application/vnd.noaa.dwml+xml;version=1"
 }
 
 def get_weather(latitude, longitude):
     """Get the current weather for a location using the Weather API."""
-    print("Getting weather for " + latitude + ", " + longitude + ".")
-
     url = WEATHER_BASE_URL + latitude + "," + longitude
     response = requests.get(url, headers=headers)
     # Check if the response was successful

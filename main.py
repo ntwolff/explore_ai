@@ -1,7 +1,6 @@
 from flask import Flask, request
 import json
 from openai import OpenAI
-from chatgpt import chat_with_gpt
 from weather import get_weather
 import time
 import os
@@ -16,7 +15,7 @@ app = Flask(__name__)
 client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 
 # Initialize conversation history
-conversation_history = []
+#conversation_history = []
 assistant_id = os.getenv('OPENAI_ASSISTANT_ID')
 
 functions = {
@@ -32,9 +31,10 @@ with open('assistant_instructions.txt', 'r') as file:
 def interact_with_bot():
 
     thread = client.beta.threads.create()
+    last_message_id = None
 
     while True:
-        question = input("User: ")
+        question = input("user: ")
         if question.lower() == "exit":
             print("Exiting the chat.")
             break
@@ -45,6 +45,9 @@ def interact_with_bot():
                 role="user",
                 content=question
             )
+            
+            # Tag the message as seen
+            last_message_id = message.id
 
             # Run assistant
             run = client.beta.threads.runs.create(
@@ -91,25 +94,20 @@ def interact_with_bot():
                 )
                 count = count + 1
 
-            # Retrieve messages from thread after run complete
-            messages = client.beta.threads.messages.list(
-                thread_id=thread.id
-            )
-
-            #TODO look for method call in data in messages and execute method
-            print(f"---------------------------------------------")
-            print(f"THREAD MESSAGES: {messages}")
-
-            # Add the user's message to the conversation history
-            for message in messages:  # Loop through the paginated messages
-                system_message = {"role": "system", "content": message.content[0].text.value}
-                conversation_history.append(system_message)  # Append the content attribute of each message to the conversation history
-                
-            # Get the response from ChatGPT
-            answer = chat_with_gpt(question, conversation_history,instructions)
             
-            print(f"---------------------------------------------")
-            print(f"Assistant: {answer}")
+            # Retrieve messages from thread after run complete            
+            thread_messages = client.beta.threads.messages.list(
+                thread_id=thread.id
+                ,order="desc"
+                ,before=last_message_id
+            )
+            #app.logger.debug(thread_messages.data)
+
+            for message in thread_messages.data:
+                if message.role == "assistant":
+                    message_text = message.content[0].text.value
+                    print(f"\nassistant: {message_text}\n")
+                    last_message_id = message.id
             
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -120,8 +118,7 @@ def execute_required_functions(required_actions):
     for tool_call in required_actions.submit_tool_outputs.tool_calls:
         func_name = tool_call.function.name
         args = json.loads(tool_call.function.arguments)
-        print(f"Executing function {func_name} with arguments {args}")
-        
+
         # Call the corresponding Python function
         if func_name in functions:
             function = functions[func_name]
