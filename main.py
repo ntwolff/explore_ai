@@ -11,10 +11,11 @@ def info():
 # Start the chat
 @app.route("/start")
 def start_assisting():
-    # TODO
-    # assist()
+    raise NotImplementedError
+    # TODO: assist()
 
 # Stop the chat
 @app.route("/stop")
 def stop_assisting():
-    # TODO
+    raise NotImplementedError
+    # TODO: stop the chat
