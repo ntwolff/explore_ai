@@ -3,7 +3,7 @@ import os
 import time
 from dotenv import load_dotenv
 from openai import OpenAI
-from weather import get_weather
+from base_weather import get_weather
 
 load_dotenv()
 
